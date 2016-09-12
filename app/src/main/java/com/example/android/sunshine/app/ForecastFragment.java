@@ -1,8 +1,10 @@
 package com.example.android.sunshine.app;
 
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -44,8 +47,12 @@ public class ForecastFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_refresh){
-            new FetchWeatherTask().execute("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
+            FetchWeatherTask weatherTask = new FetchWeatherTask();
+//            weatherTask.execute("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7&APPID=7818dafeae1d8380a02ab5806ab021c7");
+            weatherTask.execute("94043");
             return true;
+        } else if (item.getItemId() == R.id.action_settings) {
+            //get postal code from the user
         }
         return super.onOptionsItemSelected(item);
     }
@@ -83,17 +90,46 @@ public class ForecastFragment extends Fragment {
         public String TAG_NAME = FetchWeatherTask.class.getSimpleName();
 
         @Override
-        protected Integer doInBackground(String... strings) {
+        protected Integer doInBackground(String... params) {
+
+            //check if param is passed
+            if (params.length == 0){
+                return null;
+            }
 
             //Fetching forecast information from OpenWeatherMap API
             HttpURLConnection owmURLConnection = null;
             BufferedReader owmInputReader = null;
 
             String forecastJsonString = null;
+            String format = "json";
+            String units = "metric";
+            int numDays = 7;
+            String appID = "7818dafeae1d8380a02ab5806ab021c7";
+//            weatherTask.execute("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7&APPID=7818dafeae1d8380a02ab5806ab021c7");
 
             try{
-                //set up connection with the API call
-                URL owmURL = new URL(strings[0]);
+
+                final String FORECAST_BASE_URL = "http://api.openweathermap.org/data/2.5/forecast/daily?";
+                final String QUERY_PARAM = "q";
+                final String FORMAT_PARAM = "mode";
+                final String UNITS_PARAM = "units";
+                final String DAYS_PARAM = "cnt" ;
+                final String APPID_PARAM = "APPID";
+
+
+                Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
+                        .appendQueryParameter(QUERY_PARAM, params[0])
+                        .appendQueryParameter(FORMAT_PARAM, format)
+                        .appendQueryParameter(UNITS_PARAM, units)
+                        .appendQueryParameter(DAYS_PARAM, String.valueOf(numDays))
+                        .appendQueryParameter(APPID_PARAM, appID).build();
+
+
+                URL owmURL = new URL(builtUri.toString());
+
+                Log.v(TAG_NAME, "Built URI:" + builtUri.toString());
+
                 owmURLConnection = (HttpURLConnection)owmURL.openConnection();
                 owmURLConnection.setRequestMethod("GET");
                 owmURLConnection.connect();
